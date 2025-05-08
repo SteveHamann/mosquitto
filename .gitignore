@@ -137,6 +137,7 @@ test/unit/libcommon/libcommon_test
 test/unit/tls_test
 
 www/cache/
+.cache
 __pycache__
 *.sync-conflict-*
 # Debian generated files
