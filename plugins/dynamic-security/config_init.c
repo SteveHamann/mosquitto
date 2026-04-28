@@ -352,15 +352,16 @@ static int acl_add(cJSON *j_acls, const char *acltype, const char *topic, int pr
 {
 	cJSON *j_acl;
 
-	j_acl = cJSON_CreateObject();
-	cJSON_AddItemToArray(j_acls, j_acl);
-	if(cJSON_AddStringToObject(j_acl, "acltype", acltype) == NULL
+	if((j_acl = cJSON_CreateObject()) == NULL
+			|| cJSON_AddStringToObject(j_acl, "acltype", acltype) == NULL
 			|| cJSON_AddStringToObject(j_acl, "topic", topic) == NULL
 			|| cJSON_AddNumberToObject(j_acl, "priority", priority) == NULL
 			|| cJSON_AddBoolToObject(j_acl, "allow", allow) == NULL
 			){
+		cJSON_Delete(j_acl);
 		return MOSQ_ERR_NOMEM;
 	}else{
+		cJSON_AddItemToArray(j_acls, j_acl);
 		return MOSQ_ERR_SUCCESS;
 	}
 }
