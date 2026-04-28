@@ -128,23 +128,22 @@ static int generate_password(struct dynsec__data *data, cJSON *j_client, char **
 			return MOSQ_ERR_NOMEM;
 		}
 	}else{
-		unsigned char vb;
-		unsigned long v;
+		unsigned char v;
 		size_t len;
 		const size_t pwlen = 20;
 		*password = malloc(pwlen+1);
 		if(*password == NULL){
 			return MOSQ_ERR_NOMEM;
 		}
-		len = sizeof(pw_chars)-1;
+		len = sizeof(pw_chars);
 		for(size_t i=0; i<pwlen; i++){
 			do{
-				if(RAND_bytes(&vb, 1) != 1){
+				if(RAND_bytes(&v, 1) != 1){
 					free(*password);
 					return MOSQ_ERR_UNKNOWN;
 				}
-				v = vb;
-			}while(v >= (RAND_MAX - (RAND_MAX % len)));
+			// Use UINT8_MAX + 1 to not overrepresent the 0 byte
+			}while(v >= (UINT8_MAX + 1 - ((UINT8_MAX + 1) % len)));
 			(*password)[i] = pw_chars[v%len];
 		}
 		(*password)[pwlen] = '\0';
@@ -202,8 +201,6 @@ static int client_add_admin(struct dynsec__data *data, FILE *pwfile, cJSON *j_cl
 			|| cJSON_AddStringToObject(j_client, "textname", "Admin user") == NULL
 			|| (j_roles = cJSON_AddArrayToObject(j_client, "roles")) == NULL
 			){
-
-		cJSON_Delete(j_client);
 		free(password);
 		return MOSQ_ERR_NOMEM;
 	}
