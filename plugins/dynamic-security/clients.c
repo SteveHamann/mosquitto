@@ -155,9 +155,11 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			const char *password;
 			if(json_get_string(j_client, "encoded_password", &password, false) == MOSQ_ERR_SUCCESS){
 				if(!client->pw && mosquitto_pw_new(&client->pw, MOSQ_PW_DEFAULT)){
+					mosquitto_free(client);
 					return MOSQ_ERR_NOMEM;
 				}
 				if(mosquitto_pw_decode(client->pw, password) == MOSQ_ERR_NOMEM){
+					mosquitto_free(client);
 					return MOSQ_ERR_NOMEM;
 				}
 			}else{
@@ -171,6 +173,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 
 					char buf[1024];
 					if(!client->pw && mosquitto_pw_new(&client->pw, MOSQ_PW_SHA512_PBKDF2)){
+						mosquitto_free(client);
 						return MOSQ_ERR_NOMEM;
 					}
 					snprintf(buf, sizeof(buf), "$7$%d$%s$%s", iterations, salt, password);
@@ -185,7 +188,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "clientid", &clientid, false) == MOSQ_ERR_SUCCESS){
 				client->clientid = mosquitto_strdup(clientid);
 				if(client->clientid == NULL){
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -195,8 +198,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "textname", &textname, false) == MOSQ_ERR_SUCCESS){
 				client->text_name = mosquitto_strdup(textname);
 				if(client->text_name == NULL){
-					mosquitto_free(client->clientid);
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -206,9 +208,7 @@ int dynsec_clients__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_client, "textdescription", &textdescription, false) == MOSQ_ERR_SUCCESS){
 				client->text_description = mosquitto_strdup(textdescription);
 				if(client->text_description == NULL){
-					mosquitto_free(client->text_name);
-					mosquitto_free(client->clientid);
-					mosquitto_free(client);
+					client__free_item(data, client);
 					continue;
 				}
 			}
@@ -459,7 +459,6 @@ int dynsec_clients__process_delete(struct dynsec__data *data, struct mosquitto_c
 
 	client = dynsec_clients__find(data, username);
 	if(client){
-		dynsec__remove_client_from_all_groups(data, username);
 		client__remove_all_roles(client);
 		client__free_item(data, client);
 		dynsec__config_batch_save(data);

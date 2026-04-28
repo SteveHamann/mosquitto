@@ -298,7 +298,7 @@ int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_role, "textname", &textname, false) == MOSQ_ERR_SUCCESS){
 				role->text_name = mosquitto_strdup(textname);
 				if(role->text_name == NULL){
-					mosquitto_free(role);
+					role__free_item(data, role, false);
 					continue;
 				}
 			}
@@ -308,8 +308,7 @@ int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
 			if(json_get_string(j_role, "textdescription", &textdescription, false) == MOSQ_ERR_SUCCESS){
 				role->text_description = mosquitto_strdup(textdescription);
 				if(role->text_description == NULL){
-					mosquitto_free(role->text_name);
-					mosquitto_free(role);
+					role__free_item(data, role, false);
 					continue;
 				}
 			}
@@ -327,10 +326,7 @@ int dynsec_roles__config_load(struct dynsec__data *data, cJSON *tree)
 						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_LITERAL, &role->acls.unsubscribe_literal) != 0
 						|| dynsec_roles__acl_load(j_acls, ACL_TYPE_UNSUB_PATTERN, &role->acls.unsubscribe_pattern) != 0
 						){
-
-					mosquitto_free(role->text_name);
-					mosquitto_free(role->text_description);
-					mosquitto_free(role);
+					role__free_item(data, role, false);
 					continue;
 				}
 			}
