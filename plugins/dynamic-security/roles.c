@@ -245,11 +245,6 @@ static int dynsec_roles__acl_load(cJSON *j_acls, const char *key, struct dynsec_
 		enforce_priority_limits(&acl->priority);
 		json_get_bool(j_acl, "allow", &acl->allow, true, false);
 
-		bool allow;
-		if(json_get_bool(j_acl, "allow", &allow, false, false) == MOSQ_ERR_SUCCESS){
-			acl->allow = allow;
-		}
-
 		HASH_ADD_INORDER(hh, *acllist, topic, topic_len, acl, insert_acl_cmp);
 	}
 
