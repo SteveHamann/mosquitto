@@ -860,7 +860,7 @@ int dynsec_groups__process_get(struct dynsec__data *data, struct mosquitto_contr
 	}else{
 		cJSON_Delete(tree);
 		mosquitto_control_command_reply(cmd, "Group not found");
-		return MOSQ_ERR_NOMEM;
+		return MOSQ_ERR_NOT_FOUND;
 	}
 
 	cJSON_AddItemToArray(cmd->j_responses, tree);
