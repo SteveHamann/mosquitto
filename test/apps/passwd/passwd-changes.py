@@ -41,24 +41,25 @@ port = mosq_test.get_port()
 conf_file = os.path.basename(__file__).replace('.py', '.conf')
 pw_file = os.path.basename(__file__).replace('.py', '.pwfile')
 write_config(conf_file, pw_file, port)
-
-# Generate initial password file
-passwd_cmd(["-H", "sha512", "-c", "-b", pw_file, "user1", "pass1"])
-passwd_cmd(["-H", "sha512-pbkdf2", pw_file, "user2"], input="cmd\ncmd\n")
-passwd_cmd(["-H", "sha512-pbkdf2", pw_file, "user3"], input="pass3\npass3\n")
-#passwd_cmd(["-H", "argon2id", pw_file, "user3"], input="pass3\npass3\n")
-try:
-    # If we're root, set file ownership to "nobody", because that is the user
-    # the broker will change to.
-    os.chown(pw_file, 65534, 65534)
-except (AttributeError, PermissionError):
-    pass
-
-# Then start broker
-broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, nolog=True)
+broker = None
 
 try:
     rc = 1
+
+    # Generate initial password file
+    passwd_cmd(["-H", "sha512", "-c", "-b", pw_file, "user1", "pass1"])
+    passwd_cmd(["-H", "sha512-pbkdf2", pw_file, "user2"], input="cmd\ncmd\n")
+    passwd_cmd(["-H", "sha512-pbkdf2", pw_file, "user3"], input="pass3\npass3\n")
+    #passwd_cmd(["-H", "argon2id", pw_file, "user3"], input="pass3\npass3\n")
+    try:
+        # If we're root, set file ownership to "nobody", because that is the user
+        # the broker will change to.
+        os.chown(pw_file, 65534, 65534)
+    except (AttributeError, PermissionError):
+        pass
+
+    broker = mosq_test.start_broker(filename=os.path.basename(__file__), use_conf=True, port=port, nolog=True)
+
     client_check(port, "user1", "badpass", 5)
     client_check(port, "user1", "pass1", 0)
     client_check(port, "user2", "badpass", 5)
@@ -115,10 +116,14 @@ except Exception as err:
     print(err)
 finally:
     os.remove(conf_file)
-    os.remove(pw_file)
-    mosq_test.terminate_broker(broker)
-    if mosq_test.wait_for_subprocess(broker):
-        print("broker not terminated")
-        if rc == 0: rc=1
+    try:
+        os.remove(pw_file)
+    except FileNotFoundError:
+        pass
+    if broker is not None:
+        mosq_test.terminate_broker(broker)
+        if mosq_test.wait_for_subprocess(broker):
+            print("broker not terminated")
+            if rc == 0: rc=1
 
 exit(rc)
